@@ -40,6 +40,9 @@ public interface ChatMessageHandler {
 // then: 
 messenger.registerMessageHandler(your class);
 
+Known Bugs:
+the AIM client sometimes does not recieve a message if it contains a period.
+- can't figure out why, so just don't send periods in chat & you'll be fine.
 
 TODO:
 add more protocols ?
@@ -48,6 +51,8 @@ if chat is turned off, turn on for a set time if send a chat message
 or: add more commands, maybe a custom command register method for API
 more users to send notifications to ?
 list of users to check for login (and ignore others) ?
+custom player-created "pounces" to notify when a given player logs in (w/ permissions) ?
+message queue, so can get messages if the recipiant is offline onc they login  ?
 
 
 Changelog:

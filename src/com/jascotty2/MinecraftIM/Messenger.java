@@ -63,6 +63,25 @@ public class Messenger {
         return false;
     }
 
+    public void sendMessage(String to, String message) {
+        // remove existing chatcolors & replace with html color tags
+        while (message.contains("\u00A7")) {
+            int pos = message.indexOf('\u00A7');
+            String tag = chatColorToHTML(message.charAt(message.indexOf('\u00A7') + 1));
+            if (message.lastIndexOf('\u00A7') == pos) {
+                message = String.format("%s<span style='color:%s'>%s</span>", message.substring(0, pos),
+                        tag, message.substring(pos + 2));
+            } else {
+                int pos2 = message.indexOf('\u00A7', pos + 1);
+                message = String.format("%s<span style='color:%s'>%s</span>%s", message.substring(0, pos),
+                        tag, message.substring(pos + 2, pos2), message.substring(pos2));
+            }
+        }
+        if (useProtocol == Protocol.AIM) {
+            aimMess.sendMessage(to, message);
+        }
+    }
+
     public void sendNotify(String message) {
         // remove existing chatcolors & replace with html color tags
         while (message.contains("\u00A7")) {
@@ -77,7 +96,9 @@ public class Messenger {
                         tag, message.substring(pos + 2, pos2), message.substring(pos2));
             }
         }
-        aimMess.sendMessage(message);
+        if (useProtocol == Protocol.AIM) {
+            aimMess.sendMessage(message);
+        }
     }
 
     public String chatColorToHTML(char chatCol) {
@@ -146,12 +167,15 @@ public class Messenger {
                         MinecraftIM.Log(String.format("<%s> %s", dispname, msg));
                         //}else{ callbackPlugin.getServer().getOnlinePlayers()[0].performCommand(msg); }
                         if (pingReply) {
-                            aimMess.sendMessage(pingResp);
+                            //aimMess.sendMessage(pingResp);
+                            sendNotify(pingResp);
                         }
                     }
                 } else {
-                    aimMess.sendMessage(String.format("%s tried to send: %s", from, msg));
-                    aimMess.sendMessage(from, "Unauthorized!");
+                    //aimMess.sendMessage(String.format("%s tried to send: %s", from, msg));
+                    //aimMess.sendMessage(from, "Unauthorized!");
+                    sendNotify(String.format("%s tried to send: %s", from, msg));
+                    sendMessage(from, "Unauthorized!");
                 }
             }
         }
@@ -209,6 +233,11 @@ public class Messenger {
                 if (p.equalsIgnoreCase("aim")) {
                     useProtocol = Protocol.AIM;
                 }
+            }
+            
+            if(sendToUsername.equalsIgnoreCase(username)){
+                MinecraftIM.Log("Username and SendTo cannot be the same");
+                sendToUsername="";
             }
             return true;
         } catch (Exception e) {

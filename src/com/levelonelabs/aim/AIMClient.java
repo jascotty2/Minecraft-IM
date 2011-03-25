@@ -388,7 +388,7 @@ public class AIMClient implements Runnable, AIMSender {
             online = true;
             generateConnected();
             frameSend("toc_set_info \"" + info + "\"\0");
-            logger.fine("Done with AIM logon");
+            logger.info("Done with AIM logon");
             connection.setSoTimeout(3000);
         } catch (InterruptedIOException e) {
             signoff("2.25");
@@ -420,7 +420,7 @@ public class AIMClient implements Runnable, AIMSender {
      * method for reading in the next message recieved
      * @author jascotty2
      * @return "fromuser: message", or message, if error
-     */
+     * /
     public String getMessage() {
         byte[] data;
         while (true) {
@@ -445,7 +445,7 @@ public class AIMClient implements Runnable, AIMSender {
         try {
             String inString = new String(buffer);
 
-            logger.fine("*** AIM: " + inString + " ***");
+            logger.info("*** AIM: " + inString + " ***");
             StringTokenizer inToken = new StringTokenizer(inString, ":");
             String command = inToken.nextToken();
             if (command.equals("IM_IN2")) {
@@ -553,7 +553,7 @@ public class AIMClient implements Runnable, AIMSender {
             e.printStackTrace();
         }
         return "";
-    }
+    }*/
 
     /**
      * @param name2
@@ -886,6 +886,7 @@ public class AIMClient implements Runnable, AIMSender {
                 }
             }
         }
+
         out.writeByte(42); // *
         out.writeByte(2); // DATA
         out.writeShort(seqNo); // SEQ NO
@@ -1178,10 +1179,10 @@ public class AIMClient implements Runnable, AIMSender {
                 String stat = inToken.nextToken();
                 if (stat.equals("T")) {
                     generateBuddySignOn(bname, "INFO");
-                    // logger.fine("Buddy:" + name + " just signed on.");
+                    //logger.info("Buddy:" + name + " just signed on.");
                 } else if (stat.equals("F")) {
                     generateBuddySignOff(bname, "INFO");
-                    // logger.fine("Buddy:" + name + " just signed off.");
+                    //logger.info("Buddy:" + name + " just signed off.");
                 }
                 int evilAmount = Integer.parseInt(inToken.nextToken());
                 aimbud.setWarningAmount(evilAmount);
@@ -1204,11 +1205,13 @@ public class AIMClient implements Runnable, AIMSender {
             }
 
             if (command.equals("ERROR")) {
-                String error = inToken.nextToken();
+                String error = inToken.nextToken().trim();
                 logger.severe("*** AIM ERROR: " + error + " ***");
-                Errors.expand(error);
+                logger.severe(new String(buffer));
+                Errors.expand(inString);//error);
                 if (error.equals("901")) {
-                    generateError(error, "Not currently available");
+                    //generateError(error, "Not currently available");
+                    logger.severe(error+"Not currently available");
                     // logger.fine("Not currently available");
                     return;
                 }
@@ -1250,7 +1253,7 @@ public class AIMClient implements Runnable, AIMSender {
                     String text = inToken.nextToken();
                     generateError(error, "AIM Signon failure: " + text);
 
-                    // logger.fine("AIM Signon failure: " + text);
+                    logger.severe("AIM Signon failure: " + text);
                     signoff("5");
                 }
 

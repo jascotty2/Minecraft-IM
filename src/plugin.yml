@@ -1,0 +1,12 @@
+name: MinecraftIM
+main: com.jascotty2.MinecraftIM.MinecraftIM
+version: 0.1
+author: jascotty2
+website: https://github.com/jascotty2/Minecraft-IM
+description: >
+    Minecraft Messenger: for interacting with the server from an instant messenger
+commands:
+   mmess:
+    description: General command for interacting with the minecraft IM
+    usage: /<command>
+    aliases: []

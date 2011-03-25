@@ -1,0 +1,27 @@
+##########################################
+##  Minecraft Messenger Configuration   ##
+##########################################
+
+# what should be displayed as the sender
+DisplayName: Console
+
+#supported: AIM
+protocol: aim
+
+#account info for the plugin to use
+username: username
+password: password
+
+#what account will be given notifications & allowed to send chat messages
+sendto: youraccount
+
+#recieve notifications for login & logout?
+notifyOnPlayer: true
+
+#recieve chat messages?
+recieveChat: false
+
+#send confimation back? (not all messages are recieved in AIM)
+pingReply: false
+#what to send back (blank is fine)
+pingResp: 

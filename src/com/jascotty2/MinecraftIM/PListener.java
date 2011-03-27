@@ -2,8 +2,9 @@ package com.jascotty2.MinecraftIM;
 
 import java.net.InetSocketAddress;
 import org.bukkit.event.player.PlayerChatEvent;
-import org.bukkit.event.player.PlayerEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerListener;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 public class PListener extends PlayerListener {
 
@@ -14,7 +15,7 @@ public class PListener extends PlayerListener {
     }
 
     @Override
-    public void onPlayerJoin(PlayerEvent event) {
+    public void onPlayerJoin(PlayerJoinEvent event) {
         if (plugin.mess.notifyOnPlayer) {
             InetSocketAddress ip = event.getPlayer().getAddress();
             String name = event.getPlayer().getName();
@@ -24,7 +25,7 @@ public class PListener extends PlayerListener {
     }
 
     @Override
-    public void onPlayerQuit(PlayerEvent event){
+    public void onPlayerQuit(PlayerQuitEvent event){
         if (plugin.mess.notifyOnPlayer) {
             String name = event.getPlayer().getName();
             plugin.sendNotify(String.format("%s Logged out", name));
@@ -33,7 +34,7 @@ public class PListener extends PlayerListener {
     
     @Override
     public void onPlayerChat(PlayerChatEvent event){
-        if (plugin.mess.recieveChat) {
+        if (plugin.mess.recieveChat()) {
             String name = event.getPlayer().getName();
             plugin.sendNotify(String.format("[%s] %s", name, event.getMessage()));
         }

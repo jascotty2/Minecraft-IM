@@ -20,6 +20,9 @@ notifyOnPlayer: true
 
 #recieve chat messages?
 recieveChat: false
+#if disabled, will enable for a timespan after sending a chat message
+#   positive integer values only, units being s(econds) m(inutes) h(hours) (default: m)
+tempChat: 3m
 
 #send confimation back? (not all messages are recieved in AIM)
 pingReply: false

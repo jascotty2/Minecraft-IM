@@ -6,12 +6,16 @@
  */
 package com.jascotty2.MinecraftIM;
 
+import com.jascotty2.CheckInput;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.logging.Level;
 import org.bukkit.ChatColor;
+import org.bukkit.Server;
+import org.bukkit.command.CommandSender;
 
 import org.bukkit.util.config.Configuration;
 
@@ -32,10 +36,43 @@ public class Messenger {
     protected String username = "";
     protected String password = "";
     protected Protocol useProtocol = Protocol.AIM;
-    public boolean notifyOnPlayer = true, recieveChat = false, pingReply = false;
+    public boolean notifyOnPlayer = true, recieveChatMsgs = false, pingReply = false;
+    public long tempChatLen = 180;
+    Date lastChat = null;
     public String pingResp = "";
     // messenger handlers
     AIM_Messenger aimMess = null;
+
+    public class RunCommander implements CommandSender {
+
+        boolean op = false;
+        String toUser = "";
+
+        public RunCommander(boolean asOp) {
+            op = asOp;
+        }
+
+        public RunCommander(boolean asOp, String sendTo) {
+            op = asOp;
+            toUser = sendTo;
+        }
+
+        public void sendMessage(String str) {
+            if (toUser != null && !toUser.isEmpty()) {
+                sendNotify(str, toUser);
+            } else {
+                sendNotify(str);
+            }
+        }
+
+        public boolean isOp() {
+            return op;
+        }
+
+        public Server getServer() {
+            return callbackPlugin.getServer();
+        }
+    }
 
     public enum Protocol {
 
@@ -63,7 +100,8 @@ public class Messenger {
         return false;
     }
 
-    public void sendMessage(String to, String message) {
+    //public void sendMessage(String to, String message) {
+    public void sendNotify(String message, String to) {
         // remove existing chatcolors & replace with html color tags
         while (message.contains("\u00A7")) {
             int pos = message.indexOf('\u00A7');
@@ -162,10 +200,14 @@ public class Messenger {
             if (!callbackPlugin.messageRecieved(from, msg)) {
                 if (from.equalsIgnoreCase(sendToUsername)) {
                     if (!processCommands(msg) && !callbackPlugin.messageRecieved(msg)) {
-                        //if(msg.charAt(0)!='/'){
-                        callbackPlugin.getServer().broadcastMessage(String.format("<%s> %s", dispname, msg));
-                        MinecraftIM.Log(String.format("<%s> %s", dispname, msg));
-                        //}else{ callbackPlugin.getServer().getOnlinePlayers()[0].performCommand(msg); }
+                        if (msg.charAt(0) != '/') {
+                            callbackPlugin.getServer().broadcastMessage(String.format("<%s> %s", dispname, msg));
+                            MinecraftIM.Log(String.format("<%s> %s", dispname, msg));
+                            lastChat = new Date();
+                        } else {
+                            //callbackPlugin.getServer().getOnlinePlayers()[0].performCommand(msg);
+                            callbackPlugin.getServer().dispatchCommand(new RunCommander(true), msg.substring(1));
+                        }
                         if (pingReply) {
                             //aimMess.sendMessage(pingResp);
                             sendNotify(pingResp);
@@ -175,7 +217,7 @@ public class Messenger {
                     //aimMess.sendMessage(String.format("%s tried to send: %s", from, msg));
                     //aimMess.sendMessage(from, "Unauthorized!");
                     sendNotify(String.format("%s tried to send: %s", from, msg));
-                    sendMessage(from, "Unauthorized!");
+                    sendNotify("Unauthorized!", from);
                 }
             }
         }
@@ -192,6 +234,10 @@ public class Messenger {
             return false;
         }
         return true;
+    }
+
+    public boolean recieveChat(){
+        return recieveChatMsgs || (lastChat != null && ((new Date()).getTime() - lastChat.getTime())/1000 < tempChatLen);
     }
 
     protected boolean loadConfig() {
@@ -225,7 +271,7 @@ public class Messenger {
             password = config.getString("password", "");
             sendToUsername = config.getString("sendto", sendToUsername);
             notifyOnPlayer = config.getBoolean("notifyOnPlayer", notifyOnPlayer);
-            recieveChat = config.getBoolean("recieveChat", recieveChat);
+            recieveChatMsgs = config.getBoolean("recieveChat", recieveChatMsgs);
             pingReply = config.getBoolean("pingReply", pingReply);
             pingResp = config.getString("pingResp", "");
             String p = config.getString("protocol");
@@ -234,10 +280,18 @@ public class Messenger {
                     useProtocol = Protocol.AIM;
                 }
             }
-            
-            if(sendToUsername.equalsIgnoreCase(username)){
+            p = config.getString("tempChat");
+            if (p != null) {
+                try {
+                    tempChatLen = CheckInput.GetBigInt_TimeSpanInSec(p, 'm').longValue();
+                } catch (Exception ex) {
+                    MinecraftIM.Log(Level.WARNING, "tempChat has an illegal value", ex);
+                }
+            }
+
+            if (sendToUsername.equalsIgnoreCase(username)) {
                 MinecraftIM.Log("Username and SendTo cannot be the same");
-                sendToUsername="";
+                sendToUsername = "";
             }
             return true;
         } catch (Exception e) {

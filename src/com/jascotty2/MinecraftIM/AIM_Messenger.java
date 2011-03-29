@@ -84,8 +84,6 @@ public class AIM_Messenger extends AIMAdapter { // extends Thread implements Run
             if (sendToUser != null && to.equalsIgnoreCase(sendToUser.getName())) {
                 sendMessage(msg);
             } else {
-                //client.sendMesg(to, msg);
-                //sendMessage(new AIMBuddy(to), msg);
                 AIMBuddy sendto = client.getBuddy(to);
                 if(sendto==null){
                     sendto = new AIMBuddy(to);
@@ -106,17 +104,11 @@ public class AIM_Messenger extends AIMAdapter { // extends Thread implements Run
                 }
                 offlineMessages.get(buddy.getName()).add(new OfflineMessage(msg));
             }
-
         }
     }
 
     @Override
     public void handleMessage(AIMBuddy buddy, String request) {
-        /*if (!client.hasBuddy(buddy)) {
-            buddy.setGroup("MinecraftIM");
-            buddy.setOnline(true);
-            client.addBuddy(buddy);
-        }*/
         callbackMessenger.messageRecieved(buddy.getName(), request);
     }
 

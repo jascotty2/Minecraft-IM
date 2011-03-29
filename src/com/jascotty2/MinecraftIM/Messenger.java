@@ -7,7 +7,6 @@
 package com.jascotty2.MinecraftIM;
 
 import com.jascotty2.CheckInput;
-import com.levelonelabs.aim.AIMClient;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -142,8 +141,9 @@ public class Messenger {
             chatCache.put(to, new ArrayList<String>());
         }
         chatCache.get(to).add(message);
-        
-        cacheSender.cancel();
+        if (cacheSender != null) {
+            cacheSender.cancel();
+        }
         cacheSender = new SendDelay(cacheSendWait);
     }
 
@@ -312,7 +312,7 @@ public class Messenger {
                     message.add("");
                 }
 
-                for (int i = 0; i < num; ++i) {//String l : chatCache.get(u)) {
+                for (int i = 0; i < num; ++i) {
                     if (message.get(message.size() - 1).length() + temp.get(u).get(i).length() > maxLen) {
                         // prefer split on newlines
                         if (temp.get(u).get(i).length() <= maxLen) {
@@ -323,24 +323,15 @@ public class Messenger {
                         //      then copy the last color tag to the beginning of the next
                         // else, messenger will auto-split that line
                     }
-                    if (message.get(message.size() - 1).length() > 0) {
-                        //message.get(message.size() - 1).concat("\n");
-                        message.set(message.size() - 1, message.get(message.size() - 1).concat("\n").concat(temp.get(u).get(i)));
+                    if (message.get(message.size() - 1).length() > 1) {
+                        message.set(message.size() - 1, message.get(message.size() - 1).concat("\n" + temp.get(u).get(i)));
                     } else {
                         message.set(message.size() - 1, message.get(message.size() - 1).concat(temp.get(u).get(i)));
                     }
-
                 }
                 if (message.get(0).length() > 0) {
                     for (String l : message) {
-                        //System.out.println("sending message (length: " + message.length() + ")");
-                        //System.out.println(message);
                         send(u, l);
-                    }
-                } else {
-                    for (String l : message) {
-                        System.out.println("not sending message (length: " + l.length() + ")");
-                        System.out.println(AIMClient.stripHTML(l));
                     }
                 }
             }

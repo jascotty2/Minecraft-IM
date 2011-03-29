@@ -2,29 +2,35 @@
 ##  Minecraft Messenger Configuration   ##
 ##########################################
 
-# what should be displayed as the sender
-DisplayName: Console
-
 #supported: AIM
 protocol: aim
 
 #account info for the plugin to use
 username: username
 password: password
-
 #what account will be given notifications & allowed to send chat messages
 sendto: youraccount
+# what should be displayed as the sender name
+DisplayName: Console
 
 #recieve notifications for login & logout?
 notifyOnPlayer: true
+# use html formatting? (for aim.. if html causes a long message, will have to send several)
+formatColors: true
 
 #recieve chat messages?
 recieveChat: false
 #if disabled, will enable for a timespan after sending a chat message
 #   positive integer values only, units being s(econds) m(inutes) h(hours) (default: m)
 tempChat: 3m
+# whether anyone (not just authorized username) can chat with the server
+# uses tempChat as a response threshold
+publicChat: false
+#what to show after a public username
+publicSuffix: ' (AIM)'
 
-#send confimation back? (not all messages are recieved in AIM)
+
+#send confimation back? (should no longer be nessesary)
 pingReply: false
 #what to send back (blank is fine)
 pingResp: 

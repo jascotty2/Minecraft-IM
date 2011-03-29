@@ -34,9 +34,10 @@ public class PListener extends PlayerListener {
     
     @Override
     public void onPlayerChat(PlayerChatEvent event){
-        if (plugin.mess.recieveChat()) {
+        /*if (plugin.mess.recieveChat()) {
             String name = event.getPlayer().getName();
             plugin.sendNotify(String.format("[%s] %s", name, event.getMessage()));
-        }
+        }*/
+        plugin.mess.publicChat(String.format("[%s] %s", event.getPlayer().getName(), event.getMessage()));
     }
 }

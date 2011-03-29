@@ -52,6 +52,15 @@ custom player-created "pounces" to notify when a given player logs in (w/ permis
 
 Changelog:
 
+
+Version 0.1.3 - 3/28/11
+removed some debug output
+long (multi-line) messages condensed to single messages
+messages longer than limit (1024 chars in aim) are split into multiple messages
+color formatting is optional
+fixed auto-response for public users
+
+
 Version 0.1.2 - 3/27/11
 the user set as sendTo can send commands as op and retrieve the output from the command
 if chat is turned off, there is a configurable time after sending a chat message that you can recieve a reply

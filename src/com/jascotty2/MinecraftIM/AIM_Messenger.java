@@ -49,14 +49,14 @@ public class AIM_Messenger extends AIMAdapter { // extends Thread implements Run
         username = uname;
         password = pass;
         client = new AIMClient(uname, pass, "MinecraftIM", true);
+        client.defaltGroup = "MinecraftIM";
 
         client.signOn();
         //client.setPermitMode(AIMClient.PERMIT_ALL);
 
         sendTo = callbackMessenger.sendToUsername;
         if (sendTo != null && sendTo.length() > 0) {
-            sendToUser = new AIMBuddy(sendTo);
-            sendToUser.setOnline(false);
+            sendToUser = new AIMBuddy(sendTo, "MinecraftIM");
             client.addBuddy(sendToUser);
         }
         client.addAIMListener(this);
@@ -81,8 +81,18 @@ public class AIM_Messenger extends AIMAdapter { // extends Thread implements Run
 
     public void sendMessage(String to, String msg) {
         if (sendTo.length() != 0) {
-            //client.sendMesg(to, msg);
-            sendMessage(new AIMBuddy(to), msg);
+            if (sendToUser != null && to.equalsIgnoreCase(sendToUser.getName())) {
+                sendMessage(msg);
+            } else {
+                //client.sendMesg(to, msg);
+                //sendMessage(new AIMBuddy(to), msg);
+                AIMBuddy sendto = client.getBuddy(to);
+                if(sendto==null){
+                    sendto = new AIMBuddy(to);
+                    sendto.setGroup("MinecraftIM");
+                }
+                sendMessage(sendto, msg);
+            }
         }
     }
 
@@ -102,12 +112,17 @@ public class AIM_Messenger extends AIMAdapter { // extends Thread implements Run
 
     @Override
     public void handleMessage(AIMBuddy buddy, String request) {
+        /*if (!client.hasBuddy(buddy)) {
+            buddy.setGroup("MinecraftIM");
+            buddy.setOnline(true);
+            client.addBuddy(buddy);
+        }*/
         callbackMessenger.messageRecieved(buddy.getName(), request);
     }
 
     @Override
     public void handleBuddySignOn(AIMBuddy buddy, String info) {
-        //buddy.setOnline(true);
+        //System.out.println("signon: " + buddy.getName() + " (" + buddy.getGroup() + ")");
         //forward any saved messages
         if (offlineMessages.containsKey(buddy.getName())) {
             ArrayList<OfflineMessage> msgs = offlineMessages.get(buddy.getName());
@@ -117,18 +132,6 @@ public class AIM_Messenger extends AIMAdapter { // extends Thread implements Run
             offlineMessages.remove(sendToUser.getName());
         }
     }
-    /*
-    @Override
-    public void run() {
-
-    while (true) {
-    String msg = client.getMessage();
-    //System.out.println(msg);
-    if (msg.contains(": ")) {
-    callbackMessenger.messageRecieved(msg.substring(0, msg.indexOf(": ")),
-    msg.substring(msg.indexOf(": ") + 2));
-    }
-    }
-    }*/
+    
 } // end class AIM_Messenger
 

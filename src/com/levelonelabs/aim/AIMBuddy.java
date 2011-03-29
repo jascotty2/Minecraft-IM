@@ -355,7 +355,7 @@ public class AIMBuddy implements XMLizable {
      * @param group
      *            The name of the group this buddy belongs to.
      */
-    public void setGroup(String group) {
+    public final void setGroup(String group) {
         this.group = group;
     }
 

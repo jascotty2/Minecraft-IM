@@ -29,6 +29,9 @@
  * delete the provisions above, a recipient may use your version of this file
  * under the terms of any one of the NPL, the GPL or the LGPL.
  *----------------------------------------------------------------------------*/
+// misc changes by Jacob
+//      fixed logger warnings (string concatination & printStackTrace)
+//      sendMsg will send multiple messages if message is too long
 package com.levelonelabs.aim;
 
 import java.io.BufferedOutputStream;
@@ -53,6 +56,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.sourceforge.simpleaim.Errors;
 
@@ -101,6 +105,7 @@ public class AIMClient implements Runnable, AIMSender {
     private int permitMode = PERMIT_ALL;
     private Set permitted;
     private Set denied;
+    public String defaltGroup = "TOC";
 
     /**
      * Constructor for the AIMClient object
@@ -124,7 +129,7 @@ public class AIMClient implements Runnable, AIMSender {
         this.pass = pass;
         this.info = info;
         this.autoAddUsers = autoAddUsers;
-        this.addBuddy(new AIMBuddy(name));
+        this.addBuddy(new AIMBuddy(name, defaltGroup));
     }
 
     /**
@@ -261,6 +266,10 @@ public class AIMClient implements Runnable, AIMSender {
         return Arrays.asList(buddyHash.keySet().toArray()).iterator();
     }
 
+    public List getBuddyList() {
+        return Arrays.asList(buddyHash.keySet().toArray());
+    }
+
     /**
      * Sign on to aim server
      */
@@ -283,7 +292,8 @@ public class AIMClient implements Runnable, AIMSender {
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
+                    logger.log(Level.INFO, e.getMessage(), e);
                 }
             } else {
                 return;
@@ -321,13 +331,13 @@ public class AIMClient implements Runnable, AIMSender {
 
         for (int i = 0; i < loginIPs.length; i++) {
             try {
-                logger.fine("Attempting to logon using IP:" + loginIPs[i]);
+                logger.fine(String.format("Attempting to logon using IP:%s", loginIPs[i].toString()));
                 // * Client connects to TOC
                 connection = new Socket(loginIPs[i], loginPort);
                 connection.setSoTimeout(10000);
                 in = new DataInputStream(connection.getInputStream());
                 out = new DataOutputStream(new BufferedOutputStream(connection.getOutputStream()));
-                logger.fine("Successfully connected using IP:" + loginIPs[i]);
+                logger.fine(String.format("Successfully connected using IP:%s", loginIPs[i].toString()));
                 break;
             } catch (Exception e) {
                 // try the next one
@@ -340,7 +350,7 @@ public class AIMClient implements Runnable, AIMSender {
             return;
         }
 
-        logger.fine("*** Starting AIM CLIENT (SEQNO:" + seqNo + ") ***");
+        logger.fine(String.format("*** Starting AIM CLIENT (SEQNO:%d) ***", seqNo));
         try {
             // * Client sends "FLAPON\r\n\r\n"
             out.writeBytes("FLAPON\r\n\r\n");
@@ -409,151 +419,12 @@ public class AIMClient implements Runnable, AIMSender {
                 // This is normal; read times out when we dont read anything.
                 // logger.fine("*** AIM ERROR: " + e + " ***");
             } catch (IOException e) {
-                logger.severe("*** AIM ERROR: " + e + " ***");
+                logger.severe(String.format("*** AIM ERROR: %s ***", e.toString()));
                 break;
             }
         }
         signoff("Connection reset.");
     }
-
-    /**
-     * method for reading in the next message recieved
-     * @author jascotty2
-     * @return "fromuser: message", or message, if error
-     * /
-    public String getMessage() {
-        byte[] data;
-        while (true) {
-            try {
-                in.skip(4);
-                int length = in.readShort();
-                data = new byte[length];
-                in.readFully(data);
-                return getMsgFromAIM(data);
-                // logger.fine("SEQNO:"+seqNo);
-            } catch (InterruptedIOException e) {
-                // This is normal; read times out when we dont read anything.
-                // logger.fine("*** AIM ERROR: " + e + " ***");
-            } catch (IOException e) {
-                return "*** AIM ERROR: " + e + " ***";
-            }
-        }
-        //return "Connection reset.";
-    }
-
-    private String getMsgFromAIM(byte[] buffer) {
-        try {
-            String inString = new String(buffer);
-
-            logger.info("*** AIM: " + inString + " ***");
-            StringTokenizer inToken = new StringTokenizer(inString, ":");
-            String command = inToken.nextToken();
-            if (command.equals("IM_IN2")) {
-                // treat every message received as verification
-                this.connectionVerified = true;
-
-                String from = imNormalize(inToken.nextToken());
-                // whats this?
-                inToken.nextToken();
-                // whats this?
-                inToken.nextToken();
-                String mesg = inToken.nextToken();
-                while (inToken.hasMoreTokens()) {
-                    mesg = mesg + ":" + inToken.nextToken();
-                }
-
-                String request = stripHTML(mesg);
-
-                if ((from.equalsIgnoreCase(this.name)) && (request.equals(AIMClient.PING))) {
-                    logger.fine("AIM CONNECTION VERIFIED(" + new Date() + ").");
-                    return "pong";
-                }
-
-                logger.fine("*** AIM MESSAGE: " + from + " > " + request + " ***");
-
-                // CALL ALL LISTENERS HERE
-                generateMessage(from, request.trim());
-                return String.format("%s: %s", from, request);
-            }
-
-            if (command.equals("CONFIG2")) {
-                if (inToken.hasMoreElements()) {
-                    String config = inToken.nextToken();
-                    while (inToken.hasMoreTokens()) {
-                        config = config + ":" + inToken.nextToken();
-                    }
-                    processConfig(config);
-                    logger.fine("*** AIM CONFIG RECEIVED ***");
-                } else {
-                    setPermitMode(PERMIT_ALL);
-                    logger.fine("*** AIM NO CONFIG RECEIVED ***");
-                }
-                return "";
-            }
-
-            if (command.equals("EVILED")) {
-                int amount = Integer.parseInt(inToken.nextToken());
-                String from = "anonymous";
-                if (inToken.hasMoreElements()) {
-                    from = imNormalize(inToken.nextToken());
-                }
-
-                // if what we have is less than what the server just sent, its
-                // a warning
-                // otherwise it was just a server decrement update
-                if (getBuddy(name).getWarningAmount() < amount) {
-                    generateWarning(from, amount);
-                }
-
-                return "";
-            }
-
-            if (command.equals("UPDATE_BUDDY2")) {
-                String bname = imNormalize(inToken.nextToken());
-                AIMBuddy aimbud = getBuddy(bname);
-                if (aimbud == null) {
-                    logger.severe("ERROR:  NOTIFICATION ABOUT NON BUDDY(" + bname + ")");
-                    return "";
-                }
-                String stat = inToken.nextToken();
-                if (stat.equals("T")) {
-                    generateBuddySignOn(bname, "INFO");
-                    // logger.fine("Buddy:" + name + " just signed on.");
-                } else if (stat.equals("F")) {
-                    generateBuddySignOff(bname, "INFO");
-                    // logger.fine("Buddy:" + name + " just signed off.");
-                }
-                int evilAmount = Integer.parseInt(inToken.nextToken());
-                aimbud.setWarningAmount(evilAmount);
-                if (stat.equals("T")) { // See whether user is available.
-                    String signOnTime = inToken.nextToken();
-
-                    // TODO: what is the format of this?
-                    // System.err.println(bname+" signon="+signOnTime);
-                    String idleTime = inToken.nextToken();
-                    // System.err.println(bname+"
-                    // idle="+Integer.valueOf(idleTime).intValue()+" mins");
-                    if (-1 != inToken.nextToken().indexOf('U')) {
-                        generateBuddyUnavailable(bname, "INFO");
-                    } else {
-                        generateBuddyAvailable(bname, "INFO");
-                    }
-                }
-                return "";
-            }
-
-            if (command.equals("ERROR")) {
-                String error = inToken.nextToken();
-                logger.severe("*** AIM ERROR: " + error + " ***");
-                Errors.expand(error);
-                return "";
-            }
-        } catch (Exception e) {
-            logger.severe("ERROR: failed to handle aim protocol properly");
-            e.printStackTrace();
-        }
-        return "";
-    }*/
 
     /**
      * @param name2
@@ -599,9 +470,9 @@ public class AIMClient implements Runnable, AIMSender {
             // this will generate a status request for them (this message will
             // be lost, but if they are online, we should get an update)
             try {
-                frameSend("toc_get_status " + imNormalize(buddy.getName()) + "\0");
+                frameSend("toc_get_status " + imNormalize(buddy.getName()) + '\0');
             } catch (IOException e) {
-                logger.severe("Error sending status request for offline buddy: " + e.getMessage());
+                logger.severe(String.format("Error sending status request for offline buddy: %s", e.getMessage()));
             }
         }
     }
@@ -612,7 +483,7 @@ public class AIMClient implements Runnable, AIMSender {
      * @param buddy
      *            The buddy to add
      */
-    public void addBuddy(AIMBuddy buddy) {
+    public final void addBuddy(AIMBuddy buddy) {
         if (buddy == null) {
             return;
         }
@@ -633,6 +504,10 @@ public class AIMClient implements Runnable, AIMSender {
 
         // logger.fine("Added buddy to hash");
         buddyHash.put(imNormalize(buddy.getName()), buddy);
+    }
+
+    public boolean hasBuddy(AIMBuddy toCheck) {
+        return getBuddy(toCheck.getName()) != null;
     }
 
     /**
@@ -660,8 +535,7 @@ public class AIMClient implements Runnable, AIMSender {
                         frameSend(currentlist + "}\0");
                         currentlist = "toc2_new_buddies {g:" + group + "\n";
                     } catch (IOException e) {
-                        e.printStackTrace();
-                        logger.severe("ERROR adding buddies.");
+                        logger.log(Level.SEVERE, "ERROR adding buddies.", e);
                     }
                 }
             }
@@ -670,8 +544,7 @@ public class AIMClient implements Runnable, AIMSender {
                 try {
                     frameSend(currentlist + "}\0");
                 } catch (IOException e) {
-                    e.printStackTrace();
-                    logger.severe("ERROR adding buddies.");
+                    logger.log(Level.SEVERE, "ERROR adding buddies.", e);
                 }
             }
 
@@ -764,8 +637,7 @@ public class AIMClient implements Runnable, AIMSender {
                         frameSend(currentlist + " " + group + "\0");
                         currentlist = "toc2_remove_buddy";
                     } catch (IOException e) {
-                        e.printStackTrace();
-                        logger.severe("ERROR removing buddies.");
+                        logger.log(Level.SEVERE, "ERROR removing buddies.", e);
                     }
                 }
             }
@@ -774,8 +646,7 @@ public class AIMClient implements Runnable, AIMSender {
                 try {
                     frameSend(currentlist + " " + group + "\0");
                 } catch (IOException e) {
-                    e.printStackTrace();
-                    logger.severe("ERROR adding buddies.");
+                    logger.log(Level.SEVERE, "ERROR removing buddies.", e);
                 }
             }
 
@@ -792,7 +663,7 @@ public class AIMClient implements Runnable, AIMSender {
             return;
         }
 
-        logger.fine("Attempting to warn: " + buddy.getName() + ".");
+        logger.fine(String.format("Attempting to warn: %s.", buddy.getName()));
 
         String work = "toc_evil ";
         work = work.concat(imNormalize(buddy.getName()));
@@ -831,12 +702,12 @@ public class AIMClient implements Runnable, AIMSender {
         if (buddyname.length() == 0) {
             logger.fine("Attempting to permit all.");
         } else {
-            logger.fine("Attempting to deny: " + buddyname + ".");
+            logger.fine(String.format("Attempting to deny: %s.", buddyname));
         }
 
         String toBeSent = "toc2_add_deny";
         try {
-            frameSend(toBeSent + " " + buddyname + "\0");
+            frameSend(toBeSent + " " + buddyname + '\0');
         } catch (IOException e) {
             logger.severe(e.toString());
             signoff("7.75");
@@ -849,11 +720,11 @@ public class AIMClient implements Runnable, AIMSender {
      * @param buddyname
      */
     private void sendPermit(String buddyname) {
-        logger.fine("Attempting to permit: " + buddyname + ".");
+        logger.fine(String.format("Attempting to permit: %s.", buddyname));
 
         String toBeSent = "toc2_add_permit";
         try {
-            frameSend(toBeSent + " " + buddyname + "\0");
+            frameSend(toBeSent + " " + buddyname + '\0');
         } catch (IOException e) {
             logger.severe(e.getMessage());
             signoff("7.875");
@@ -875,11 +746,11 @@ public class AIMClient implements Runnable, AIMSender {
             sendLimit = Math.min(MAX_POINTS, sendLimit);
             if (sendLimit < MAX_POINTS) {
                 // sendLimit could be less than 0, this still works properly
-                logger.fine("Current send limit=" + sendLimit + " out of " + MAX_POINTS);
+                logger.fine(String.format("Current send limit=%d out of %d", sendLimit, MAX_POINTS));
                 try {
                     // this will wait for every point below the max
                     int waitAmount = MAX_POINTS - sendLimit;
-                    logger.fine("Delaying send " + waitAmount + " units");
+                    logger.fine(String.format("Delaying send %d units", waitAmount));
                     Thread.sleep(RECOVER_RATE * waitAmount);
                     sendLimit += waitAmount;
                 } catch (InterruptedException ie) {
@@ -912,11 +783,11 @@ public class AIMClient implements Runnable, AIMSender {
         AIMBuddy aimbud = getBuddy(from);
         if (aimbud == null) {
             if (autoAddUsers) {
-                aimbud = new AIMBuddy(from);
+                aimbud = new AIMBuddy(from, defaltGroup);
                 addBuddy(aimbud);
                 aimbud.setOnline(true);
             } else {
-                logger.info("MESSAGE FROM A NON BUDDY(" + from + ")");
+                logger.info(String.format("MESSAGE FROM A NON BUDDY(%s)", from));
                 // only send a response if a non-empty one is configured
                 if ((nonUserResponse != null) && !nonUserResponse.equals("")) {
                     sendMesg(from, nonUserResponse);
@@ -926,13 +797,14 @@ public class AIMClient implements Runnable, AIMSender {
         }
 
         if (aimbud.isBanned()) {
-            logger.fine("Ignoring message from banned user (" + from + "):" + request);
+            logger.fine(String.format("Ignoring message from banned user (%s): %s", from, request));
         } else {
             for (int i = 0; i < aimListeners.size(); i++) {
                 try {
                     ((AIMListener) aimListeners.get(i)).handleMessage(aimbud, request);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
+                    logger.log(Level.WARNING, e.getMessage(), e);
                 }
             }
         }
@@ -951,7 +823,8 @@ public class AIMClient implements Runnable, AIMSender {
             try {
                 ((AIMListener) aimListeners.get(i)).handleWarning(aimbud, amount);
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
+                logger.log(Level.WARNING, e.getMessage(), e);
             }
         }
     }
@@ -964,7 +837,8 @@ public class AIMClient implements Runnable, AIMSender {
             try {
                 ((AIMListener) aimListeners.get(i)).handleConnected();
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
+                logger.log(Level.WARNING, e.getMessage(), e);
             }
         }
     }
@@ -977,7 +851,8 @@ public class AIMClient implements Runnable, AIMSender {
             try {
                 ((AIMListener) aimListeners.get(i)).handleDisconnected();
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
+                logger.log(Level.WARNING, e.getMessage(), e);
             }
         }
     }
@@ -994,7 +869,8 @@ public class AIMClient implements Runnable, AIMSender {
             try {
                 ((AIMListener) aimListeners.get(i)).handleError(error, message);
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
+                logger.log(Level.WARNING, e.getMessage(), e);
             }
         }
     }
@@ -1009,7 +885,7 @@ public class AIMClient implements Runnable, AIMSender {
     private void generateBuddySignOn(String buddy, String message) {
         AIMBuddy aimbud = getBuddy(buddy);
         if (aimbud == null) {
-            logger.severe("ERROR:  NOTIFICATION ABOUT NON BUDDY(" + buddy + ")");
+            logger.severe(String.format("ERROR:  NOTIFICATION ABOUT NON BUDDY(%s)", buddy));
             return;
         }
 
@@ -1019,7 +895,8 @@ public class AIMClient implements Runnable, AIMSender {
                 try {
                     ((AIMListener) aimListeners.get(i)).handleBuddySignOn(aimbud, message);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
+                    logger.log(Level.WARNING, e.getMessage(), e);
                 }
             }
         }
@@ -1035,7 +912,7 @@ public class AIMClient implements Runnable, AIMSender {
     private void generateBuddySignOff(String buddy, String message) {
         AIMBuddy aimbud = getBuddy(buddy);
         if (aimbud == null) {
-            logger.severe("ERROR:  NOTIFICATION ABOUT NON BUDDY(" + buddy + ")");
+            logger.severe(String.format("ERROR:  NOTIFICATION ABOUT NON BUDDY(%s)", buddy));
             return;
         }
 
@@ -1045,7 +922,8 @@ public class AIMClient implements Runnable, AIMSender {
             try {
                 ((AIMListener) aimListeners.get(i)).handleBuddySignOff(aimbud, message);
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
+                logger.log(Level.WARNING, e.getMessage(), e);
             }
         }
     }
@@ -1061,14 +939,15 @@ public class AIMClient implements Runnable, AIMSender {
     private void generateBuddyAvailable(String buddy, String message) {
         AIMBuddy aimbud = getBuddy(buddy);
         if (aimbud == null) {
-            logger.severe("ERROR:  NOTIFICATION ABOUT NON BUDDY(" + buddy + ")");
+            logger.severe(String.format("ERROR:  NOTIFICATION ABOUT NON BUDDY(%s)", buddy));
             return;
         }
         for (int i = 0; i < aimListeners.size(); i++) {
             try {
                 ((AIMListener) aimListeners.get(i)).handleBuddyAvailable(aimbud, message);
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
+                logger.log(Level.WARNING, e.getMessage(), e);
             }
         }
     }
@@ -1084,7 +963,7 @@ public class AIMClient implements Runnable, AIMSender {
     private void generateBuddyUnavailable(String buddy, String message) {
         AIMBuddy aimbud = getBuddy(buddy);
         if (aimbud == null) {
-            logger.severe("ERROR:  NOTIFICATION ABOUT NON BUDDY(" + buddy + ")");
+            logger.severe(String.format("ERROR:  NOTIFICATION ABOUT NON BUDDY(%s)", buddy));
             return;
         }
 
@@ -1092,7 +971,7 @@ public class AIMClient implements Runnable, AIMSender {
             try {
                 ((AIMListener) aimListeners.get(i)).handleBuddyUnavailable(aimbud, message);
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.log(Level.WARNING, e.getMessage(), e);
             }
         }
     }
@@ -1106,7 +985,7 @@ public class AIMClient implements Runnable, AIMSender {
         try {
             String inString = new String(buffer);
 
-            logger.fine("*** AIM: " + inString + " ***");
+            logger.fine(String.format("*** AIM: %s ***", inString));
             StringTokenizer inToken = new StringTokenizer(inString, ":");
             String command = inToken.nextToken();
             if (command.equals("IM_IN2")) {
@@ -1126,11 +1005,11 @@ public class AIMClient implements Runnable, AIMSender {
                 String request = stripHTML(mesg);
 
                 if ((from.equalsIgnoreCase(this.name)) && (request.equals(AIMClient.PING))) {
-                    logger.fine("AIM CONNECTION VERIFIED(" + new Date() + ").");
+                    logger.fine(String.format("AIM CONNECTION VERIFIED(%s)", (new Date()).toString()));
                     return;
                 }
 
-                logger.fine("*** AIM MESSAGE: " + from + " > " + request + " ***");
+                logger.fine(String.format("*** AIM MESSAGE: %s > %s ***", from, request));
 
                 // CALL ALL LISTENERS HERE
                 generateMessage(from, request.trim());
@@ -1173,7 +1052,7 @@ public class AIMClient implements Runnable, AIMSender {
                 String bname = imNormalize(inToken.nextToken());
                 AIMBuddy aimbud = getBuddy(bname);
                 if (aimbud == null) {
-                    logger.severe("ERROR:  NOTIFICATION ABOUT NON BUDDY(" + bname + ")");
+                    logger.severe(String.format("ERROR:  NOTIFICATION ABOUT NON BUDDY(%s)", bname));
                     return;
                 }
                 String stat = inToken.nextToken();
@@ -1206,12 +1085,12 @@ public class AIMClient implements Runnable, AIMSender {
 
             if (command.equals("ERROR")) {
                 String error = inToken.nextToken().trim();
-                logger.severe("*** AIM ERROR: " + error + " ***");
+                logger.severe(String.format("*** AIM ERROR: %s ***", error));
                 logger.severe(new String(buffer));
                 Errors.expand(inString);//error);
                 if (error.equals("901")) {
                     //generateError(error, "Not currently available");
-                    logger.severe(error+"Not currently available");
+                    logger.severe(String.format("%s Not currently available", error));
                     // logger.fine("Not currently available");
                     return;
                 }
@@ -1253,15 +1132,14 @@ public class AIMClient implements Runnable, AIMSender {
                     String text = inToken.nextToken();
                     generateError(error, "AIM Signon failure: " + text);
 
-                    logger.severe("AIM Signon failure: " + text);
+                    logger.severe(String.format("AIM Signon failure: %s", text));
                     signoff("5");
                 }
 
                 return;
             }
         } catch (Exception e) {
-            logger.severe("ERROR: failed to handle aim protocol properly");
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "ERROR: failed to handle aim protocol properly", e);
         }
     }
 
@@ -1331,10 +1209,19 @@ public class AIMClient implements Runnable, AIMSender {
      *            to send
      */
     public void sendMesg(String to, String text) {
-        if (text.length() >= 1024) {
-            text = text.substring(0, 1024);
+        if (text.length() > 1024) {
+            //text = text.substring(0, 1024);
+            int msgs = (int) Math.ceil((double) text.length() / 1024);
+            for (int part = 0; part < msgs; ++part) {
+                if ((part + 1) * 1024 < text.length()) {
+                    sendMesg(to, text.substring(part * 1024, (part + 1) * 1024));
+                } else {
+                    sendMesg(to, text.substring(part * 1024));
+                }
+            }
+            return;
         }
-        logger.fine("Sending Message " + to + " > " + text);
+        logger.fine(String.format("Sending Message %s > %s", to, text));
 
         String work = "toc2_send_im ";
         work = work.concat(to);
@@ -1363,18 +1250,17 @@ public class AIMClient implements Runnable, AIMSender {
         try {
             frameSend(work);
         } catch (IOException e) {
-            logger.severe("*** AIM ERROR: sending message.");
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "*** AIM ERROR: sending message.", e);
             signoff("9");
         }
     }
 
     /**
      * Change availability. If the reason is the empty String, the user will be
-     * made avaiable. Otherwise, it will be made away.
+     * made avaliable. Otherwise, it will be made away.
      * 
      * @param reason
-     *            The reason explaining why the user is not avaiable.
+     *            The reason explaining why the user is not avaliable.
      */
     private void sendAway(String reason) {
         final String work = "toc_set_away \"" + reason + "\"\0";
@@ -1393,7 +1279,7 @@ public class AIMClient implements Runnable, AIMSender {
      */
     private void signoff(String place) {
         online = false;
-        logger.fine("Trying to close IM (" + place + ").....");
+        logger.fine(String.format("Trying to close IM (%s).....", place));
         try {
             if (null != out) {
                 out.close();
@@ -1452,35 +1338,35 @@ public class AIMClient implements Runnable, AIMSender {
      */
     public void setPermitMode(int mode) {
         if (mode < 1 || mode > 5) {
-            logger.info("Invalid permit mode, ignoring:" + mode);
+            logger.info(String.format("Invalid permit mode, ignoring:%d", mode));
             return;
-        } else if (mode == DENY_SOME && this.denied.size() == 0) {
+        } else if (mode == DENY_SOME && this.denied.isEmpty()) {
             logger.info("Attempting to deny some, and none are denied, ignoring.");
             return;
-        } else if (mode == PERMIT_SOME && this.permitted.size() == 0) {
+        } else if (mode == PERMIT_SOME && this.permitted.isEmpty()) {
             logger.info("Attempting to permit some, and none are permitted, ignoring.");
             return;
         }
 
-        logger.info("Setting permit mode to:" + mode);
+        logger.fine(String.format("Setting permit mode to:%d", mode));
         permitMode = mode;
         try {
             frameSend("toc2_set_pdmode " + permitMode + "\0");
         } catch (IOException e) {
-            e.printStackTrace();
-            logger.severe("ERROR setting permit mode!");
+            //e.printStackTrace();
+            logger.log(Level.SEVERE, "ERROR setting permit mode!", e);
         }
     }
 
     /**
-     * Clear unvailable message
+     * Clear unavailable message
      */
     public void setAvailable() {
         sendAway("");
     }
 
     /**
-     * Set unvailable message
+     * Set unavailable message
      * 
      * @param reason
      */
@@ -1530,14 +1416,15 @@ public class AIMClient implements Runnable, AIMSender {
                     // need to see if we got a response
                     if (!aim.connectionVerified) {
                         // restart the connection if we didnt see the message
-                        logger.info("*** AIM -- CONNECTION PROBLEM(" + new Date() + "): Connection was not verified!");
+                        logger.info(String.format("*** AIM -- CONNECTION PROBLEM(%s): Connection was not verified!", (new Date()).toString()));
                         logger.info("****** Assuming it was dropped, issuing restart.");
                         aim.signoff("Connection Dropped!");
                         new Thread(aim).start();
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
+                logger.log(Level.SEVERE, e.getMessage(), e);
             }
         }
     }

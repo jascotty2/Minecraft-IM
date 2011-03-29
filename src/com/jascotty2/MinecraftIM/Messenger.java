@@ -7,11 +7,16 @@
 package com.jascotty2.MinecraftIM;
 
 import com.jascotty2.CheckInput;
+import com.levelonelabs.aim.AIMClient;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Level;
 import org.bukkit.ChatColor;
 import org.bukkit.Server;
@@ -31,14 +36,25 @@ public class Messenger {
     // plugin this is using 
     MinecraftIM callbackPlugin;
     // settings
-    public String dispname = "Console";
+    public String dispname = "Console", publicSuffix = " (IM)";
     public String sendToUsername = "";
     protected String username = "";
     protected String password = "";
     protected Protocol useProtocol = Protocol.AIM;
-    public boolean notifyOnPlayer = true, recieveChatMsgs = false, pingReply = false;
+    public boolean notifyOnPlayer = true,
+            recieveChatMsgs = false,
+            publicChat = false,
+            formatColors = true;
     public long tempChatLen = 180;
-    Date lastChat = null;
+    // for chat when recieveChatMsgs == false, or publicChat
+    HashMap<String, Date> lastChat = new HashMap<String, Date>();
+    // for sending a condensed chat block (speed up sending)
+    HashMap<String, ArrayList<String>> chatCache = new HashMap<String, ArrayList<String>>();
+    int cacheSendWait = 500; // milliseconds
+    //private Timer cacheSender = new Timer();
+    private SendDelay cacheSender = null;
+    // should no longer be needed
+    public boolean pingReply = false;
     public String pingResp = "";
     // messenger handlers
     AIM_Messenger aimMess = null;
@@ -102,44 +118,40 @@ public class Messenger {
 
     //public void sendMessage(String to, String message) {
     public void sendNotify(String message, String to) {
-        // remove existing chatcolors & replace with html color tags
-        while (message.contains("\u00A7")) {
-            int pos = message.indexOf('\u00A7');
-            String tag = chatColorToHTML(message.charAt(message.indexOf('\u00A7') + 1));
-            if (message.lastIndexOf('\u00A7') == pos) {
-                message = String.format("%s<span style='color:%s'>%s</span>", message.substring(0, pos),
-                        tag, message.substring(pos + 2));
-            } else {
-                int pos2 = message.indexOf('\u00A7', pos + 1);
-                message = String.format("%s<span style='color:%s'>%s</span>%s", message.substring(0, pos),
-                        tag, message.substring(pos + 2, pos2), message.substring(pos2));
+        // html special chars
+        message = message.replaceAll("\\<", "&lt;").replaceAll("\\>", "&gt;");
+        if (formatColors) {
+            // remove existing chatcolors & replace with html color tags
+            while (message.contains("\u00A7")) {
+                int pos = message.indexOf('\u00A7');
+                String tag = chatColorToHTML(message.charAt(message.indexOf('\u00A7') + 1));
+                if (message.lastIndexOf('\u00A7') == pos) {
+                    message = String.format("%s<span style='color:%s'>%s</span>", message.substring(0, pos),
+                            tag, message.substring(pos + 2));
+                } else {
+                    // todo: if there is no colored text (or is just spaces) don't format color
+                    int pos2 = message.indexOf('\u00A7', pos + 1);
+                    message = String.format("%s<span style='color:%s'>%s</span>%s", message.substring(0, pos),
+                            tag, message.substring(pos + 2, pos2), message.substring(pos2));
+                }
             }
+        } else {
+            message = message.replaceAll("\\\u00A7.", "");
         }
-        if (useProtocol == Protocol.AIM) {
-            aimMess.sendMessage(to, message);
+        if (chatCache.get(to) == null) {
+            chatCache.put(to, new ArrayList<String>());
         }
+        chatCache.get(to).add(message);
+        
+        cacheSender.cancel();
+        cacheSender = new SendDelay(cacheSendWait);
     }
 
     public void sendNotify(String message) {
-        // remove existing chatcolors & replace with html color tags
-        while (message.contains("\u00A7")) {
-            int pos = message.indexOf('\u00A7');
-            String tag = chatColorToHTML(message.charAt(message.indexOf('\u00A7') + 1));
-            if (message.lastIndexOf('\u00A7') == pos) {
-                message = String.format("%s<span style='color:%s'>%s</span>", message.substring(0, pos),
-                        tag, message.substring(pos + 2));
-            } else {
-                int pos2 = message.indexOf('\u00A7', pos + 1);
-                message = String.format("%s<span style='color:%s'>%s</span>%s", message.substring(0, pos),
-                        tag, message.substring(pos + 2, pos2), message.substring(pos2));
-            }
-        }
-        if (useProtocol == Protocol.AIM) {
-            aimMess.sendMessage(message);
-        }
+        sendNotify(message, sendToUsername);
     }
 
-    public String chatColorToHTML(char chatCol) {
+    public static String chatColorToHTML(char chatCol) {
         /*
         #       0 is black
         #       1 is dark blue
@@ -157,7 +169,7 @@ public class Messenger {
         #       d is pink
         #       e is yellow
         #       f is white*/
-        switch (chatCol) {
+        switch (Character.toLowerCase(chatCol)) {
             case '0':
                 return "#000000";
             case '1':
@@ -192,7 +204,7 @@ public class Messenger {
                 return "#333333"; // send gray, not white
             //return "span style='color:#FFFFFF'";
         }
-        return "#000000'";
+        return "#000000";
     }
 
     public void messageRecieved(String from, String msg) {
@@ -203,16 +215,22 @@ public class Messenger {
                         if (msg.charAt(0) != '/') {
                             callbackPlugin.getServer().broadcastMessage(String.format("<%s> %s", dispname, msg));
                             MinecraftIM.Log(String.format("<%s> %s", dispname, msg));
-                            lastChat = new Date();
+                            lastChat.put(from, new Date());
                         } else {
                             //callbackPlugin.getServer().getOnlinePlayers()[0].performCommand(msg);
-                            callbackPlugin.getServer().dispatchCommand(new RunCommander(true), msg.substring(1));
+                            //callbackPlugin.getServer().dispatchCommand(new RunCommander(true, sendToUsername), msg.substring(1));
+                            callbackPlugin.getServer().dispatchCommand(
+                                    new RunCommander(true), msg.substring(1));
                         }
                         if (pingReply) {
                             //aimMess.sendMessage(pingResp);
                             sendNotify(pingResp);
                         }
                     }
+                } else if (publicChat) {
+                    callbackPlugin.getServer().broadcastMessage(String.format("<%s%s> %s", from, publicSuffix, msg));
+                    MinecraftIM.Log(String.format("<%s%s> %s", from, publicSuffix, msg));
+                    lastChat.put(from, new Date());
                 } else {
                     //aimMess.sendMessage(String.format("%s tried to send: %s", from, msg));
                     //aimMess.sendMessage(from, "Unauthorized!");
@@ -236,8 +254,104 @@ public class Messenger {
         return true;
     }
 
-    public boolean recieveChat(){
-        return recieveChatMsgs || (lastChat != null && ((new Date()).getTime() - lastChat.getTime())/1000 < tempChatLen);
+    public boolean recieveChat() {
+        return recieveChatMsgs || (lastChat.get(sendToUsername) != null
+                && ((new Date()).getTime() - lastChat.get(sendToUsername).getTime()) / 1000 < tempChatLen);
+    }
+
+    public boolean publicChatActive() {
+        if (!publicChat) {
+            return false;
+        }
+        long now = (new Date()).getTime();
+        for (Date d : lastChat.values()) {
+            if ((now - d.getTime()) / 1000 < tempChatLen) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void publicChat(String msg) {
+        long now = (new Date()).getTime();
+        boolean mainIncl = false;
+        for (String u : lastChat.keySet()) {
+            if ((now - lastChat.get(u).getTime()) / 1000 < tempChatLen) {
+                sendNotify(msg, u);
+                if (!mainIncl && u.equalsIgnoreCase(sendToUsername)) {
+                    mainIncl = true;
+                }
+            }
+        }
+        if (!mainIncl && recieveChatMsgs) {
+            sendNotify(msg);
+        }
+    }
+
+    // for sending the cached messages
+    public class SendDelay extends TimerTask {
+
+        public SendDelay(long delay) {
+            (new Timer()).schedule(this, delay);
+        }
+
+        @Override
+        public void run() {
+            HashMap<String, ArrayList<String>> temp = new HashMap<String, ArrayList<String>>();
+            temp.putAll(chatCache);
+            chatCache.clear();
+            int maxLen = 1024; // AIM
+
+            for (String u : temp.keySet()) {
+                ArrayList<String> message = new ArrayList<String>();
+                int num = temp.get(u).size();
+                // if multiple lines, start on a new line
+                if (num > 1) {
+                    message.add("\n");
+                } else {
+                    message.add("");
+                }
+
+                for (int i = 0; i < num; ++i) {//String l : chatCache.get(u)) {
+                    if (message.get(message.size() - 1).length() + temp.get(u).get(i).length() > maxLen) {
+                        // prefer split on newlines
+                        if (temp.get(u).get(i).length() <= maxLen) {
+                            message.add("\n" + temp.get(u).get(i));
+                            continue;
+                        }
+                        // todo: split at beginning of tag, if will cut it off
+                        //      then copy the last color tag to the beginning of the next
+                        // else, messenger will auto-split that line
+                    }
+                    if (message.get(message.size() - 1).length() > 0) {
+                        //message.get(message.size() - 1).concat("\n");
+                        message.set(message.size() - 1, message.get(message.size() - 1).concat("\n").concat(temp.get(u).get(i)));
+                    } else {
+                        message.set(message.size() - 1, message.get(message.size() - 1).concat(temp.get(u).get(i)));
+                    }
+
+                }
+                if (message.get(0).length() > 0) {
+                    for (String l : message) {
+                        //System.out.println("sending message (length: " + message.length() + ")");
+                        //System.out.println(message);
+                        send(u, l);
+                    }
+                } else {
+                    for (String l : message) {
+                        System.out.println("not sending message (length: " + l.length() + ")");
+                        System.out.println(AIMClient.stripHTML(l));
+                    }
+                }
+            }
+        }
+
+        void send(String to, String message) {
+            if (useProtocol == Protocol.AIM) {
+                aimMess.sendMessage(to, message);
+                //aimMess.sendMessage(u, AIMClient.stripHTML(message));
+            }
+        }
     }
 
     protected boolean loadConfig() {
@@ -267,11 +381,14 @@ public class Messenger {
             config.load();
 
             dispname = config.getString("DisplayName", dispname);
+            publicSuffix = config.getString("publicSuffix", publicSuffix);
+            publicChat = config.getBoolean("publicChat", publicChat);
             username = config.getString("username", "");
             password = config.getString("password", "");
             sendToUsername = config.getString("sendto", sendToUsername);
             notifyOnPlayer = config.getBoolean("notifyOnPlayer", notifyOnPlayer);
             recieveChatMsgs = config.getBoolean("recieveChat", recieveChatMsgs);
+            formatColors = config.getBoolean("formatColors", formatColors);
             pingReply = config.getBoolean("pingReply", pingReply);
             pingResp = config.getString("pingResp", "");
             String p = config.getString("protocol");

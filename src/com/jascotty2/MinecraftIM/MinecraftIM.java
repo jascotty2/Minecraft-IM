@@ -87,6 +87,11 @@ public class MinecraftIM extends JavaPlugin {
             messages.add(toAdd);
         }
     }
+    public void removeMessageHandler(ChatMessageHandler toRem){
+        if(!messages.contains(toRem)){
+            messages.remove(toRem);
+        }
+    }
 
     public boolean messageRecieved(String fromUser, String message){
         for(ChatMessageHandler c : messages){

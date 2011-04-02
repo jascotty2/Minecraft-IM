@@ -56,7 +56,8 @@ public class Messenger {
     public boolean pingReply = false;
     public String pingResp = "";
     // messenger handlers
-    AIM_Messenger aimMess = null;
+    //AIM_Messenger aimMess = null;
+    Abstract_Messenger messenger = null;
 
     public class RunCommander implements CommandSender {
 
@@ -91,7 +92,7 @@ public class Messenger {
 
     public enum Protocol {
 
-        AIM
+        AIM, MSN //, SKYPE
     }
 
     public Messenger(MinecraftIM callback) {
@@ -101,18 +102,18 @@ public class Messenger {
     public final boolean load() {
         if (loadConfig()) {
             if (useProtocol == Protocol.AIM) {
-                aimMess = new AIM_Messenger(this);
-            }
+                messenger = new AIM_Messenger(this);
+            }//else if (useProtocol == Protocol.SKYPE){ messenger = new Skype_Messenger(this); }
             return true;
         }
         return false;
     }
 
     public boolean connect() {
-        if (useProtocol == Protocol.AIM) {
-            return aimMess.connect(username, password);
-        }
-        return false;
+        //if (useProtocol == Protocol.AIM) {
+        return messenger.connect(username, password);
+        //}
+        //return false;
     }
 
     //public void sendMessage(String to, String message) {
@@ -300,7 +301,7 @@ public class Messenger {
             HashMap<String, ArrayList<String>> temp = new HashMap<String, ArrayList<String>>();
             temp.putAll(chatCache);
             chatCache.clear();
-            int maxLen = 1024; // AIM
+            long maxLen = messenger.maxMessageSize(); // AIM
 
             for (String u : temp.keySet()) {
                 ArrayList<String> message = new ArrayList<String>();
@@ -331,18 +332,18 @@ public class Messenger {
                 }
                 if (message.get(0).length() > 0) {
                     for (String l : message) {
-                        send(u, l);
+                        messenger.sendMessage(u, l);
                     }
                 }
             }
         }
 
-        void send(String to, String message) {
-            if (useProtocol == Protocol.AIM) {
-                aimMess.sendMessage(to, message);
-                //aimMess.sendMessage(u, AIMClient.stripHTML(message));
-            }
+        /*void send(String to, String message) {
+        if (useProtocol == Protocol.AIM) {
+        aimMess.sendMessage(to, message);
+        //aimMess.sendMessage(u, AIMClient.stripHTML(message));
         }
+        }*/
     }
 
     protected boolean loadConfig() {
@@ -384,7 +385,10 @@ public class Messenger {
             pingResp = config.getString("pingResp", "");
             String p = config.getString("protocol");
             if (p != null) {
-                if (p.equalsIgnoreCase("aim")) {
+                //if (p.equalsIgnoreCase("skype")) { useProtocol = Protocol.SKYPE;}
+                if (p.equalsIgnoreCase("msn")) {
+                    useProtocol = Protocol.MSN;
+                } else {
                     useProtocol = Protocol.AIM;
                 }
             }

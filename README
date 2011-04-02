@@ -52,6 +52,10 @@ custom player-created "pounces" to notify when a given player logs in (w/ permis
 
 Changelog:
 
+Version 0.1.5 - 4/1/11
+617 compatibility
+
+
 Version 0.1.4 - 3/29/11
 fixed double-newline
 fixed null pointer exception on start

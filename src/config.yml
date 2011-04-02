@@ -2,7 +2,7 @@
 ##  Minecraft Messenger Configuration   ##
 ##########################################
 
-#supported: AIM
+#supported: AIM, SKYPE
 protocol: aim
 
 #account info for the plugin to use

@@ -16,7 +16,7 @@ import java.util.HashMap;
 /**
  * @author jacob
  */
-public class AIM_Messenger extends AIMAdapter { // extends Thread implements Runnable
+public class AIM_Messenger extends AIMAdapter implements Abstract_Messenger { // extends Thread implements Runnable
 
     Messenger callbackMessenger;
     AIMClient client = null;
@@ -24,6 +24,10 @@ public class AIM_Messenger extends AIMAdapter { // extends Thread implements Run
     public String sendTo;
     AIMBuddy sendToUser = null;
     HashMap<String, ArrayList<OfflineMessage>> offlineMessages = new HashMap<String, ArrayList<OfflineMessage>>();
+
+    public long maxMessageSize() {
+        return 1024;
+    }
 
     public class OfflineMessage {
 

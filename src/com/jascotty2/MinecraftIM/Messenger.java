@@ -11,9 +11,11 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Level;
@@ -55,44 +57,16 @@ public class Messenger {
     // should no longer be needed
     public boolean pingReply = false;
     public String pingResp = "";
+    // if message to send, but is offline
+    HashMap<String, ArrayList<OfflineMessage>> offlineMessages = new HashMap<String, ArrayList<OfflineMessage>>();
+    SimpleDateFormat timestamp = new SimpleDateFormat("MMM dd HH:mm:ss zzz");
     // messenger handlers
     //AIM_Messenger aimMess = null;
     Abstract_Messenger messenger = null;
 
-    public class RunCommander implements CommandSender {
-
-        boolean op = false;
-        String toUser = "";
-
-        public RunCommander(boolean asOp) {
-            op = asOp;
-        }
-
-        public RunCommander(boolean asOp, String sendTo) {
-            op = asOp;
-            toUser = sendTo;
-        }
-
-        public void sendMessage(String str) {
-            if (toUser != null && !toUser.isEmpty()) {
-                sendNotify(str, toUser);
-            } else {
-                sendNotify(str);
-            }
-        }
-
-        public boolean isOp() {
-            return op;
-        }
-
-        public Server getServer() {
-            return callbackPlugin.getServer();
-        }
-    }
-
     public enum Protocol {
 
-        AIM, MSN //, SKYPE
+        AIM, XMPP, MSN //, SKYPE
     }
 
     public Messenger(MinecraftIM callback) {
@@ -110,10 +84,13 @@ public class Messenger {
     }
 
     public boolean connect() {
-        //if (useProtocol == Protocol.AIM) {
-        return messenger.connect(username, password);
-        //}
-        //return false;
+        return messenger == null ? false : messenger.connect(username, password);
+    }
+
+    public void disconnect() {
+        if (messenger != null) {
+            messenger.disconnect();
+        }
     }
 
     //public void sendMessage(String to, String message) {
@@ -218,13 +195,11 @@ public class Messenger {
                             MinecraftIM.Log(String.format("<%s> %s", dispname, msg));
                             lastChat.put(from, new Date());
                         } else {
-                            //callbackPlugin.getServer().getOnlinePlayers()[0].performCommand(msg);
                             //callbackPlugin.getServer().dispatchCommand(new RunCommander(true, sendToUsername), msg.substring(1));
                             callbackPlugin.getServer().dispatchCommand(
-                                    new RunCommander(true), msg.substring(1));
+                                    new MessengerRunCommander(this, true), msg.substring(1));
                         }
                         if (pingReply) {
-                            //aimMess.sendMessage(pingResp);
                             sendNotify(pingResp);
                         }
                     }
@@ -253,6 +228,23 @@ public class Messenger {
             return false;
         }
         return true;
+    }
+
+    public void queueOfflineMessage(String to, String msg) {
+        if (!offlineMessages.containsKey(to)) {
+            offlineMessages.put(to, new ArrayList<OfflineMessage>());
+        }
+        offlineMessages.get(to).add(new OfflineMessage(msg));
+    }
+
+    public void signon(String user) {
+        ArrayList<OfflineMessage> msgs = offlineMessages.get(user);
+        if (msgs != null) {
+            for (OfflineMessage msg : msgs) {
+                sendNotify(String.format("[%s] %s", timestamp.format(msg.initDate), msg.message), user);
+            }
+            offlineMessages.remove(user);
+        }
     }
 
     public boolean recieveChat() {
@@ -392,8 +384,7 @@ public class Messenger {
                     useProtocol = Protocol.AIM;
                 }
             }
-            p = config.getString("tempChat");
-            if (p != null) {
+            if ((p = config.getString("tempChat")) != null) {
                 try {
                     tempChatLen = CheckInput.GetBigInt_TimeSpanInSec(p, 'm').longValue();
                 } catch (Exception ex) {
@@ -405,6 +396,27 @@ public class Messenger {
                 MinecraftIM.Log("Username and SendTo cannot be the same");
                 sendToUsername = "";
             }
+
+            if ((p = config.getString("timestamp")) != null) {
+                try {
+                    SimpleDateFormat ntstamp = new SimpleDateFormat(p);
+                    ntstamp.format(new Date());
+                    timestamp = ntstamp;
+                } catch (Exception e) {
+                    MinecraftIM.Log(Level.WARNING, "invalid timestamp format: \"" + p + "\": reverting to default");
+                }
+            }
+
+            if ((p = config.getString("timezone")) != null) {
+                try {
+                    TimeZone t = TimeZone.getTimeZone(p);
+                    if (t != null) {
+                        timestamp.setTimeZone(t);
+                    }
+                } catch (Exception e) {
+                    MinecraftIM.Log(Level.WARNING, "invalid timezone: \"" + p + "\": reverting to default");
+                }
+            }
             return true;
         } catch (Exception e) {
             MinecraftIM.Log(Level.SEVERE, "Failed to load config ", e);
@@ -413,3 +425,49 @@ public class Messenger {
     }
 } // end class Messenger
 
+class OfflineMessage {
+
+    public Date initDate;
+    public String message;
+
+    public OfflineMessage(String msg) {
+        initDate = new Date();
+        message = msg;
+    }
+}
+
+class MessengerRunCommander implements CommandSender {
+
+    boolean op = false;
+    String toUser = "";
+    Messenger mess = null;
+
+    public MessengerRunCommander(Messenger m, boolean asOp) {
+        mess = m;
+        op = asOp;
+    }
+
+    public MessengerRunCommander(Messenger m, boolean asOp, String sendTo) {
+        mess = m;
+        op = asOp;
+        toUser = sendTo;
+    }
+
+    public void sendMessage(String str) {
+        if (mess != null) {
+            if (toUser != null && !toUser.isEmpty()) {
+                mess.sendNotify(str, toUser);
+            } else {
+                mess.sendNotify(str);
+            }
+        }
+    }
+
+    public boolean isOp() {
+        return op;
+    }
+
+    public Server getServer() {
+        return mess.callbackPlugin.getServer();
+    }
+}

@@ -1140,6 +1140,7 @@ public class AIMClient implements Runnable, AIMSender {
             }
         } catch (Exception e) {
             logger.log(Level.SEVERE, "ERROR: failed to handle aim protocol properly", e);
+            logger.info(String.format("Recieved: %s", new String(buffer)));
         }
     }
 

@@ -29,7 +29,7 @@ public class MinecraftIM extends JavaPlugin {
     ArrayList <ChatMessageHandler> messages = new ArrayList <ChatMessageHandler>();
 
     public void onDisable() {
-
+        mess.disconnect();
         Log("Disabled");
     }
 
@@ -37,9 +37,10 @@ public class MinecraftIM extends JavaPlugin {
         Log("Starting Version " + this.getDescription().getVersion());
         
         PluginManager pm = getServer().getPluginManager();
-        pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.PLAYER_CHAT, playerListener, Priority.Normal, this);
+        pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
+        pm.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
+        pm.registerEvent(Event.Type.PLAYER_KICK, playerListener, Priority.Monitor, this);
+        pm.registerEvent(Event.Type.PLAYER_CHAT, playerListener, Priority.Monitor, this);
         startIM();
     }
 
@@ -59,6 +60,7 @@ public class MinecraftIM extends JavaPlugin {
     }
 
     boolean startIM() {
+        mess.disconnect();
         if(mess.load()){
             Log("Config Loaded");
         }else{
@@ -69,7 +71,6 @@ public class MinecraftIM extends JavaPlugin {
             Log("Connected to IM account");
             Log("sending connect confirm to " + mess.sendToUsername);
             mess.sendNotify("MinecraftIM enabled");
-
             
             return true;
         } else {

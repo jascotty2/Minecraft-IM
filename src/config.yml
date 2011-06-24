@@ -2,13 +2,13 @@
 ##  Minecraft Messenger Configuration   ##
 ##########################################
 
-#supported: AIM, SKYPE
+#supported: AIM
 protocol: aim
 
-#account info for the plugin to use
+#account info for the plugin to use (only for the plugin - not another account you use)
 username: username
 password: password
-#what account will be given notifications & allowed to send chat messages
+#what account will be given notifications & allowed to send chat messages (and OP-level commands)
 sendto: youraccount
 # what should be displayed as the sender name
 DisplayName: Console
@@ -17,6 +17,30 @@ DisplayName: Console
 notifyOnPlayer: true
 # use html formatting? (for aim.. if html causes a long message, will have to send several)
 formatColors: true
+# if messages are queued for offline, how should the timestamp be displayed?
+# y	Year
+# M	Month in year
+# w	Week in year
+# W	Week in month
+# D	Day in year
+# d	Day in month
+# F	Day of week in month
+# E	Day in week
+# a	Am/pm marker
+# H	Hour in day (0-23)
+# k	Hour in day (1-24)
+# K	Hour in am/pm (0-11)
+# h	Hour in am/pm (1-12)
+# m	Minute in hour
+# s	Second in minute
+# z	General time zone (Pacific Standard Time; PST; GMT-08:00)
+# Z	RFC 822 time zone (-0800)
+# for more info on formatting, see http://download.oracle.com/javase/1.4.2/docs/api/java/text/SimpleDateFormat.html
+# default: MMM dd HH:mm:ss
+timestamp: "MMM dd HH:mm:ss zzz"
+# custom  time zone (optional)(eg. "America/New_York")
+timezone: 
+
 
 #recieve chat messages?
 recieveChat: false

@@ -13,6 +13,7 @@ package com.jascotty2.MinecraftIM;
 public interface Abstract_Messenger {
     //public void newMessenger(Messenger callback);
     public boolean connect(String uname, String pass);
+    public void disconnect();
     public void sendMessage(String msg);
     public void sendMessage(String to, String msg);
     public long maxMessageSize();

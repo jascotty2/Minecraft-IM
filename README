@@ -48,9 +48,19 @@ add more protocols ?
 more users to send notifications to ?
 list of users to check for login (and ignore others) ?
 custom player-created "pounces" to notify when a given player logs in (w/ permissions) ?
-
+list of users to notify for login events? (and/or allow for chat, if not public)
+don't send login events of admin to admin
+custom block list (add/remove users without reloading)
 
 Changelog:
+
+Version 0.1.6 - 6/24/22
+blocked aolsystemmsg
+removed "from" from login notifications
+changed offline message handling to allow condensed messages (instead of individual)
+resolved reconnect duplication errors
+added kick event notification (instead of logout)
+
 
 Version 0.1.5 - 4/1/11
 617 compatibility

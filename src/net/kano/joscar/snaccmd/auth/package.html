@@ -1,0 +1,21 @@
+<html>
+<body>
+Provides implementations of <code>SnacCommand</code>s and associated command
+factories for SNAC family <code>0x17</code>, the family of commands used during
+the login or "authorization" sequence.
+<br>
+<br>
+This package encapsulates the entire authorization process; the sequence of
+commands is generally:
+<ul>
+<li> Client sends <code>KeyRequest</code> </li>
+<li> Server replies with <code>KeyResponse</code> which contains an
+<i>authorization key</i> </li>
+<li> Client sends <code>AuthRequest</code>, encrypting his or her password using
+the key given in the <code>KeyResponse</code> (joscar does the encryption for
+you) </li>
+<li> Server sends <code>AuthResponse</code>, indicating either an error code or
+a server, port, and login cookie for "basic online service"
+</ul>
+</body>
+</html>

@@ -6,7 +6,7 @@ Intended for those who have a small server (like me) and want to know when a fri
 Features:
 
 Single-user (for now?)
-Supports: AIM (just AIM for now)
+Supports: AIM, GTalk, Jabber
 messages on player login & logoff
 chat through IM
 can send commands to the server
@@ -54,12 +54,21 @@ custom block list (add/remove users without reloading)
 
 Changelog:
 
-Version 0.1.6 - 6/24/22
+Version 0.2 - 8/11/11
+AIM toc handler classes changed - now works with AIM again :D
+- old method quit working about 7/20/11 17:10GMT for reasons still unknown
+now chat ignores auto-responses
+XMPP protocol added.. for now, just GTalk & Jabber
+- may add custom xmpp, if someone needs
+
+
+Version 0.1.6 - 6/24/11
 blocked aolsystemmsg
 removed "from" from login notifications
 changed offline message handling to allow condensed messages (instead of individual)
-resolved reconnect duplication errors
+resolved (most) reconnect duplication errors & made more /reload friendly
 added kick event notification (instead of logout)
+added custom timestamp config, with custom timezone
 
 
 Version 0.1.5 - 4/1/11

@@ -2,7 +2,7 @@
 ##  Minecraft Messenger Configuration   ##
 ##########################################
 
-#supported: AIM
+#supported: AIM, GTALK, JABBER
 protocol: aim
 
 #account info for the plugin to use (only for the plugin - not another account you use)

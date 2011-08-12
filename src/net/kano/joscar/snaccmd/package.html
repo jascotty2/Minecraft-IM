@@ -1,0 +1,27 @@
+<html>
+<body>
+Provides a set of default implementations of almost every SNAC command used in
+modern AIM/OSCAR connections as well as a set of data structures used
+throughout these commands. The commands are both readable and writable, as are
+the majority (if not all) of the data structures. This means that these command
+classes can be used in developing either an AIM client <i>or</i> an AIM server.
+<br>
+<br>
+Also provided is a set of command factories to convert raw {@linkplain
+net.kano.joscar.flapcmd.SnacPacket SNAC packets} to these default
+implementations of {@linkplain net.kano.joscar.flapcmd.SnacCommand
+<code>SnacCommand</code>s}.
+<br>
+<br>
+Note that these are only default implementations, and a developer could very
+easily add his or her own implementations of these commands to, say, add a new
+field to a directory info request were such a field to be added to the protocol
+after the release (or death :) of this library. This is covered in detail in
+the joscar tutorial, but as a hint, it involves defining your own {@link
+net.kano.joscar.snac.SnacCmdFactory} subclasses and registering them with each
+{@linkplain net.kano.joscar.snac.AbstractSnacProcessor SNAC processor} and/or
+defining your own <code>SnacCommand</code> subclass to be sent over the
+connection and/or generated from a SNAC packet in your
+<code>SnacCmdFactory</code>.
+</body>
+</html>

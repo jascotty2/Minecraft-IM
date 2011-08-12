@@ -1,0 +1,59 @@
+<html>
+<body>
+Provides a default implementation of the RV commands used in initializing and
+communicating over an encrypted IM session via the protocol created by the
+developers of <a href="http://trillian.cc" title="The website of the Trillian
+IM client">Trillian</a>, an IM client for Windows.
+<br>
+<br>
+Note that as of this writing, it is unknown how exactly the sessions are
+encrypted. The Trillian website claims the encryption is Blowfish with a
+key negotiated using a Diffie-Hellman system, but such a system seems not to
+yield the correct results. This is probably due to something wrong with the key
+exchange algorithm. Below is what is currently known about Trillian Encryption's
+key exchange system:
+<ul>
+
+<li> Not enough arguments are passed between two clients to satisfy a true
+Diffie-Hellman key exchange. In Diffie-Hellman, there are three variables
+normally transmitted by one client, and one sent back by the other. The Trillian
+Encryption protocol only transmits two and one. </li>
+
+<li> It appears that the missing variable is <code>g</code>, the "generator" or
+exponent base. This value appears to always be <code>5</code>. This was
+discovered by passing in different modulus values in the {@link
+net.kano.joscar.rvcmd.trillcrypt TrillianCryptReqRvCmd}: a value of
+<code>5</code> causes Trillian to crash every time. This appears to be because
+if the generator is <code>5</code> and the modulus is <code>5</code>,
+<code>5<sup>x</sup> mod 5</code> is always <code>0</code>, which could
+concievably cause Trillian to crash if it attempted to divide by that
+value. </li>
+
+<li> Normally, a Diffie-Hellman key exchange is <code>512</code> or
+<code>1024</code> bits. In fact, the Sun JCE provider's implementation only
+allows keys whose sizes are a multiple of <code>64</code> between those values.
+This could be irrelevant; Diffie-Hellman can be performed with a key of any
+size. </li>
+
+<li> It seems, then, that it should be easy to implement Trillian Encryption
+(with a working knowledge of Diffie-Hellman and the JCE's Blowfish
+implementation, of course). However, the key exchange simply doesn't work with
+the parameters specified above and in the protocol. Perhaps the generator is
+actually some other number that happens to be a multiple of <code>5</code>.
+Watch this space. </li>
+
+</ul>
+
+Note that the normal sequence of commands in a Trillian Secure IM connection is
+as follows:
+<ul>
+<li> A: {@link net.kano.joscar.rvcmd.trillcrypt.TrillianCryptReqRvCmd} to request a session </li>
+<li> B: {@link net.kano.joscar.rvcmd.trillcrypt.TrillianCryptAcceptRvCmd} to accept a session </li>
+<li> A: {@link net.kano.joscar.rvcmd.trillcrypt.TrillianCryptBeginRvCmd} to begin the session <br> </li>
+<li> A and B: {@link net.kano.joscar.rvcmd.trillcrypt.TrillianCryptMsgRvCmd}s containing message text <br> </li>
+<li> A or B: {@link net.kano.joscar.rvcmd.trillcrypt.TrillianCryptCloseRvCmd} to close the connection </li>
+</ul>
+
+@see net.kano.joscar.snaccmd.CapabilityBlock#BLOCK_TRILLIANCRYPT
+</body>
+</html>

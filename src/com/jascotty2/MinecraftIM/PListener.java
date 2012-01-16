@@ -1,4 +1,4 @@
-package com.jascotty2.MinecraftIM;
+package com.jascotty2.minecraftim;
 
 //import java.net.InetSocketAddress;
 import java.util.HashMap;

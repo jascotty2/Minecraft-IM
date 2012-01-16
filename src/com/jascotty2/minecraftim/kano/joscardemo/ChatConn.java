@@ -48,8 +48,8 @@ import net.kano.joscar.snaccmd.chat.RecvChatMsgIcbm;
 import net.kano.joscar.snaccmd.chat.SendChatMsgIcbm;
 import net.kano.joscar.snaccmd.chat.UsersJoinedCmd;
 import net.kano.joscar.snaccmd.chat.UsersLeftCmd;
-import net.kano.joscardemo.security.SecureSession;
-import net.kano.joscardemo.security.SecureSessionException;
+import com.jascotty2.minecraftim.kano.joscardemo.security.SecureSession;
+import com.jascotty2.minecraftim.kano.joscardemo.security.SecureSessionException;
 
 import java.util.ArrayList;
 import java.util.Arrays;

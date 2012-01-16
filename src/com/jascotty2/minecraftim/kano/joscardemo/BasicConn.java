@@ -84,8 +84,8 @@ import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.snaccmd.icbm.RvResponse;
 import net.kano.joscar.snaccmd.rooms.RoomInfoReq;
-import net.kano.joscardemo.security.SecureSession;
-import net.kano.joscardemo.security.SecureSessionException;
+import com.jascotty2.minecraftim.kano.joscardemo.security.SecureSession;
+import com.jascotty2.minecraftim.kano.joscardemo.security.SecureSessionException;
 
 import java.io.PrintWriter;
 import java.net.InetAddress;
@@ -293,7 +293,7 @@ public abstract class BasicConn extends AbstractFlapConn {
                 }
 
             } else {
-                msg = OscarTools.stripHtml(message.getMessage());
+                //msg = OscarTools.stripHtml(message.getMessage());
 
 //                OldIconHashInfo iconInfo = icbm.getIconInfo();
 //
@@ -305,7 +305,7 @@ public abstract class BasicConn extends AbstractFlapConn {
 //                sendRequest(new SnacRequest(new SendImIcbm(sn, msg), null));
             }
 			
-			callback.handleMessage(sn, msg, icbm.isAutoResponse());
+			callback.handleMessage(sn, message.getMessage(), icbm.isAutoResponse());
 //            String str = dateFormat.format(new Date()) + " IM from "
 //                    + sn + ": " + msg;
 //            if (imLogger != null) {

@@ -6,31 +6,27 @@
  */
 package com.jascotty2.minecraftim;
 
-import net.kano.joscar.*;
+import net.kano.joscar.ByteBlock;
 import net.kano.joscar.OscarTools;
+import net.kano.joscar.net.ClientConn;
+import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.flap.ClientFlapConn;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.*;
 import net.kano.joscar.snaccmd.chat.ChatMsg;
 import net.kano.joscar.snaccmd.conn.ServiceRequest;
+import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.rooms.JoinRoomCmd;
-import net.kano.joscardemo.security.SecureSessionException;
+import net.kano.joscar.snaccmd.ssi.SsiDataCmd;
+import net.kano.joscar.snaccmd.ssi.SsiItem;
+import net.kano.joscar.ssiitem.BuddyItem;
+import com.jascotty2.minecraftim.kano.joscardemo.security.*;
 import com.jascotty2.minecraftim.kano.joscardemo.*;
-import com.levelonelabs.aim.Buddy;
-import com.levelonelabs.aim.Group;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import net.kano.joscar.net.ClientConn;
-import net.kano.joscar.net.ClientConnEvent;
-import net.kano.joscar.snaccmd.icbm.SendImIcbm;
-import net.kano.joscar.snaccmd.ssi.SsiDataCmd;
-import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.ssiitem.BuddyItem;
-import net.kano.joscar.ssiitem.GroupItem;
-import net.kano.joscardemo.security.SecureSession;
 
 /**
  * @author jacob
@@ -42,7 +38,7 @@ public class AIM_Messenger extends Abstract_Messenger /* implements ChatConnList
 	public String sendTo;
 	boolean connected = false;
 	protected Map<String, Buddy> buddies = new HashMap<String, Buddy>();
-	protected Map<Integer, Group> groups = new HashMap<Integer, Group>();
+	//protected Map<Integer, Group> groups = new HashMap<Integer, Group>();
 	protected static final int DEFAULT_SERVICE_PORT = 5190;
 	protected DefaultClientFactoryList factoryList = new DefaultClientFactoryList();
 	protected ClientFlapConn loginFlapConn = null, mainConn = null;
@@ -181,11 +177,10 @@ public class AIM_Messenger extends Abstract_Messenger /* implements ChatConnList
 		if(e.getNewState() == ClientConn.STATE_CONNECTED){
 			connected = true;
 		} else { // if(e.getNewState() != ClientConn.STATE_CONNECTED) {
-			if(connected){
+			if(connected != (connected = false)){
 				MinecraftIM.Log("Connection dropped.. attempting reconnect");
 				bosConn.connect();
 			}
-			connected = false;
 		}
 	}
 
@@ -246,7 +241,8 @@ public class AIM_Messenger extends Abstract_Messenger /* implements ChatConnList
 	}
 
 	public void handleMessage(String buddy, String message) {
-		if (!buddy.equals("aolsystemmsg")) {
+		if (!buddy.equalsIgnoreCase("aolsystemmsg")) {
+			message = OscarTools.stripHtml(message.replace("<br>", "\n").replace("<BR>", "\n"));
 			callbackMessenger.messageRecieved(buddy, message);
 		}
 	}
@@ -283,13 +279,13 @@ public class AIM_Messenger extends Abstract_Messenger /* implements ChatConnList
 //					: (Object) obj));
 			if (items[i].getItemType() == SsiItem.TYPE_BUDDY) {
 				BuddyItem b = (BuddyItem) bosConn.getItemFactory().getItemObj(items[i]);
-				buddies.put(b.getScreenname(), new Buddy(b.getScreenname(),
-						groups.containsKey(b.getGroupId()) ? groups.get(b.getGroupId()).getName() : ""));
-			} else if (items[i].getItemType() == SsiItem.TYPE_GROUP
+				buddies.put(b.getScreenname(), new Buddy(b.getScreenname()));//,
+						/*groups.containsKey(b.getGroupId()) ? groups.get(b.getGroupId()).getUsername() : ""));*/
+			} /*else if (items[i].getItemType() == SsiItem.TYPE_GROUP
 					&& items[i].getParentId() != 0) {
 				GroupItem g = (GroupItem) bosConn.getItemFactory().getItemObj(items[i]);
 				groups.put(g.getId(), new Group(g.getId(), g.getGroupName()));
-			}
+			}*/
 		}
 	}
 

@@ -54,11 +54,19 @@ custom block list (add/remove users without reloading)
 
 Changelog:
 
+Version 0.2.5 - 1/15/12
+fixed how lib extraction operates
+( MSN messaging added via JML library - can't get it to work properly yet :/ )
+
+Version 0.2b - 9/9/12
+XMPP logout exception fixed
+libraries now included seperately in jar & extracted at runtime
+
 Version 0.2 - 8/11/11
 AIM toc handler classes changed - now works with AIM again :D
 - old method quit working about 7/20/11 17:10GMT for reasons still unknown
 now chat ignores auto-responses
-XMPP protocol added.. for now, just GTalk & Jabber
+XMPP protocol added via the smack library.. for now, just GTalk & Jabber
 - may add custom xmpp, if someone needs
 
 

@@ -1,12 +1,11 @@
 /**
  * Programmer: Jacob Scott
  * Program Name: XMPP_Messenger
- * Description:
+ * Description: messaging through the xmpp protocol using the smack library
  * Date: Aug 11, 2011
  */
 package com.jascotty2.minecraftim;
 
-import com.levelonelabs.aim.Buddy;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -97,7 +96,7 @@ public class XMPP_Messenger extends Abstract_Messenger implements MessageListene
 	@Override
 	public void disconnect() {
 		if (connection != null) {
-			connection.disconnect(null);
+			connection.disconnect(new Presence(Presence.Type.unavailable));
 			connection.getRoster().removeRosterListener(listener);
 			listener = null;
 			connection = null;
@@ -122,6 +121,7 @@ public class XMPP_Messenger extends Abstract_Messenger implements MessageListene
 				}
 				try {
 					c.sendMessage(msg);
+					//c.sendMessage(new Message(msg, Message.Type.headline)); // not sure what does..
 				} catch (XMPPException ex) {
 					MinecraftIM.Log(Level.SEVERE, "Error sending message via XMPP to " + to + ": " + ex.getMessage());
 				}

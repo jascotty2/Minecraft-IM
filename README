@@ -54,11 +54,15 @@ custom block list (add/remove users without reloading)
 
 Changelog:
 
+Version 0.2.6 - 3/5/12
+updated for new bukkit system
+removed a mostly meaningless debug message
+
 Version 0.2.5 - 1/15/12
 fixed how lib extraction operates
 ( MSN messaging added via JML library - can't get it to work properly yet :/ )
 
-Version 0.2b - 9/9/12
+Version 0.2b - 9/9/11
 XMPP logout exception fixed
 libraries now included seperately in jar & extracted at runtime
 

@@ -1,9 +1,21 @@
 /**
- * Programmer: Jacob Scott
- * Program Name: MinecraftIM
- * Description:
- * Date: Mar 24, 2011
+ * Copyright (C) 2011 Jacob Scott <jascottytechie@gmail.com>
+ * Description: (TODO)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package com.jascotty2.minecraftim;
 
 import java.io.File;
@@ -18,14 +30,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.event.Event;
-import org.bukkit.event.Event.Priority;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/**
- * @author jacob
- */
 public class MinecraftIM extends JavaPlugin {
 
 	protected final static Logger logger = Logger.getLogger("Minecraft");
@@ -39,6 +45,7 @@ public class MinecraftIM extends JavaPlugin {
 		libs.put("lib/joscar-0.9.3.jar", "net.kano.joscar.ByteBlock");
 		libs.put("lib/smack.jar", "org.jivesoftware.smack.Chat");
 		libs.put("lib/smackx.jar", "org.jivesoftware.smackx.XHTMLManager");
+		libs.put("lib/httpcore-4.0.1.jar", "org.apache.http.params.HttpParams");
 	}
 	
 	public MinecraftIM() {
@@ -63,20 +70,16 @@ public class MinecraftIM extends JavaPlugin {
 		playerListener = new PListener(this);
 	}
 	
+	@Override
 	public void onEnable() {
 		Log("Starting Version " + this.getDescription().getVersion());
 
-		PluginManager pm = getServer().getPluginManager();
-
+		getServer().getPluginManager().registerEvents(playerListener, this);
 		
-
-		pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
-		pm.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
-		pm.registerEvent(Event.Type.PLAYER_KICK, playerListener, Priority.Monitor, this);
-		pm.registerEvent(Event.Type.PLAYER_CHAT, playerListener, Priority.Monitor, this);
 		startIM();
 	}
 
+	@Override
 	public void onDisable() {
 		mess.disconnect();
 		Log("Disabled");

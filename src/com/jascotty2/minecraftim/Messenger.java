@@ -1,9 +1,21 @@
 /**
- * Programmer: Jacob Scott
- * Program Name: Messenger
- * Description:
- * Date: Mar 24, 2011
+ * Copyright (C) 2011 Jacob Scott <jascottytechie@gmail.com>
+ * Description: (TODO)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package com.jascotty2.minecraftim;
 
 import me.jascotty2.io.CheckInput;
@@ -19,6 +31,8 @@ import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Level;
+import me.jascotty2.lib.bukkit.config.Configuration;
+import me.jascotty2.lib.util.Str;
 import org.bukkit.ChatColor;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
@@ -27,8 +41,6 @@ import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
-
-import org.bukkit.util.config.Configuration;
 
 /**
  * @author jacob
@@ -532,5 +544,9 @@ class MessengerRunCommander implements CommandSender {
 
 	public String getName() {
 		return toUser != null && !toUser.isEmpty() ? toUser : "(IM Messenger)";//sendToUsername;
+	}
+
+	public void sendMessage(String[] strings) {
+		mess.sendNotify(Str.concatStr(strings, "\n"), toUser);
 	}
 }

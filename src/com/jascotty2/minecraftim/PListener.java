@@ -1,15 +1,34 @@
+/**
+ * Copyright (C) 2011 Jacob Scott <jascottytechie@gmail.com>
+ * Description: (TODO)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jascotty2.minecraftim;
 
 //import java.net.InetSocketAddress;
 import java.util.HashMap;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
-import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-public class PListener extends PlayerListener {
+public class PListener implements Listener {
 
     private final MinecraftIM plugin;
     private HashMap<Player, Long> kickedPL = new HashMap<Player, Long>();
@@ -18,7 +37,7 @@ public class PListener extends PlayerListener {
         plugin = callback;
     }
 
-    @Override
+	@EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
         if (plugin.mess.notifyOnPlayer) {
             plugin.sendNotify(event.getPlayer().getName() + " Joined");
@@ -29,7 +48,7 @@ public class PListener extends PlayerListener {
         }
     }
 
-    @Override
+	@EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event){
         if (plugin.mess.notifyOnPlayer) {
             if(
@@ -41,7 +60,7 @@ public class PListener extends PlayerListener {
         }
     }
 
-    @Override
+	@EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerKick(PlayerKickEvent event) {
         if (plugin.mess.notifyOnPlayer && !event.isCancelled()) {
             kickedPL.put(event.getPlayer(), System.currentTimeMillis());
@@ -50,7 +69,7 @@ public class PListener extends PlayerListener {
         }
     }
     
-    @Override
+	@EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerChat(PlayerChatEvent event){
         /*if (plugin.mess.recieveChat()) {
             String name = event.getPlayer().getName();
